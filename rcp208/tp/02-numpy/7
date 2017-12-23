@@ -1,0 +1,43 @@
+# -*- coding: utf-8 -*-
+
+import numpy as np
+
+
+# Vecteur uni ou muldimensionnel composé d'éléments du même type
+ti = np.array([1, 2, 3, 4])
+print ti
+print ti.dtype
+
+
+tf = np.array([1.5, 2.5, 3.5, 4.5])
+print tf.dtype
+
+tf2d = np.array([[1.5, 2, 3], [4, 5, 6]])
+print tf2d
+
+tff = np.array([[ 1, 2, 3], [4, 5, 6]], dtype = float)
+print tff
+
+tfi = np.array([[1.5, 2, 3], [4, 5, 6]], dtype = int)
+print tfi
+print tfi.dtype
+print tfi.shape
+print tfi.ndim
+print tfi.size
+
+tz2d = np.zeros((3, 4))
+print tz2d
+
+tu2d = np.ones((3, 4))
+print tu2d
+
+# eq identity
+id2d = np.eye(5)
+print id2d
+
+# créer un tableau sans initialisé les valeurs => aléatoire
+tni2d = np.empty((3, 4))
+print tni2d
+
+
+print 
