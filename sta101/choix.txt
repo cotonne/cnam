@@ -1,0 +1,23 @@
+Tableau comparatif processeur
+https://www.intel.fr/content/www/fr/fr/support/articles/000005505/processors.html
+https://www.intel.com/content/dam/support/us/en/documents/processors/intel-core-i7-comparison-chart.pdf
+
+Insertion professionnelle des diplômé.e.s de Licence professionnelle en universités et établissements assimilés
+https://www.data.gouv.fr/fr/datasets/insertion-professionnelle-des-diplome-e-s-de-licence-professionnelle-en-universites-et-etablissements-assimiles/
+https://data.enseignementsup-recherche.gouv.fr/pages/insertion_professionnelle/
+
+Arbres remarquables?
+https://www.data.gouv.fr/fr/datasets/arbres-remarquables-en-france-et-ailleurs/
+
+
+Régularité TGV:
+https://data.sncf.com/explore/dataset/regularite-mensuelle-tgv/?sort=date
+
+Consommation électrique par secteur d'activité
+https://data.enedis.fr/explore/dataset/consommation-electrique-par-secteurs-dactivite/
+
+Parcours et réussite des bachelières et bacheliers inscrits pour la première fois en licence
+https://data.enseignementsup-recherche.gouv.fr/explore/dataset/fr-esr-parcours-et-reussite-des-bacheliers-en-licence/table/
+
+Diplômes délivrés dans les établissements publics sous tutelle du ministère en charge de l'enseignement supérieur et de la recherche
+https://data.enseignementsup-recherche.gouv.fr/explore/dataset/fr_esr_sise_diplomes_delivres_esr_public/table/
