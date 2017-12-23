@@ -1,0 +1,6 @@
+\select@language {french}
+\contentsline {chapter}{\numberline {1}Exploration des donn\IeC {\'e}es}{3}
+\contentsline {section}{\numberline {1.1}Pr\IeC {\'e}sentation du jeu de donn\IeC {\'e}es}{3}
+\contentsline {section}{\numberline {1.2}Analyse univari\IeC {\'e}e des donn\IeC {\'e}es}{3}
+\contentsline {subsection}{\numberline {1.2.1}Analyse statistique}{3}
+\contentsline {subsubsection}{Attributs num\IeC {\'e}riques}{3}

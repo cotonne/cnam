@@ -1,0 +1,72 @@
+\documentclass[a4paper, 11pt]{report}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage[frenchb]{babel}
+\title{''Credit Card Savings''}
+\author{''PHELIZOT Yvan''}
+\date{''date de fin de rédaction''} 
+\begin{document}
+\maketitle
+\tableofcontents
+
+
+
+\chapter*{Introduction}
+Le « credit scoring » est un outil financier d’aide à la décision permettant d’évaluer la « solvabilité » d’un emprunteur. Cette pratique s’applique aussi bien aux particuliers qu’à des portefeuilles de gestion d’actif. 
+
+En fonction de la réponse, il est possible de déterminer le risque associé à l’emprunteur qu’il rembourse ou pas le crédit. 
+
+L’évalution du risque de crédit repose énormément sur le « Big Data ». Elle combine de nombreux facteurs pour déterminer de manière la plus précise possible le résultat.
+
+Le but de ce rapport est de présenter la méthodologie mise en place pour déterminer ce risque financier en se basant sur le jeu de données « German Credit Data ». A partir des attributs données, il va être nécessaire de donner une réponse sur le fait d’accorder ou pas un crédit. Il s’agit donc d’un problème de classification consituté de deux classes : « crédit accordé » et « crédit non accordé ».
+
+Il est important de commencer par une pré-analyse du jeu fourni afin de déterminer ces caractériques et sa qualité (données manquantes, insuffisantes, …). Cela permettra notamment de réduire les dimensions du problème en supprimant les attributs non significatifs.
+
+A partir du jeu de données traitée, différents familles d’outils seont utilisés et de celles-ci, plusieurs modèles seront créés. Les meilleurs modèles obtenus seront ensuite améliorés pour obtenir le meilleur résultat possible.
+
+\chapter{Exploration des données}
+\section{Présentation du jeu de données}
+Deux fichiers sont proposés. Le premier est constitué de 1000 entrées. On peut considérer que c’est un jeu assez faible.
+
+Un exemple d’entrée :
+A11 6 A34 A43 1169 A65 A75 4 A93 A101 4 A121 67 A143 A152 2 A173 1 A192 A201 1
+
+Chaque entrée est composée de 21 attributs différents, aussi bien catégoriel que numérique (discrète et continue). Le second est dérivé du premier, les données catégorielles ayant été encodées sous forme de nombre. Les attributs sont décrits dans le fichier « german.doc ». 
+
+Les 20 premiers attributs peuvent être décomposés en plusieurs familles :
+Données relatives au prêt (durée, montant, but, …)
+Solvabilité de l’emprunteur (Patrimoine, présence de garant, ...)
+Informations sur l’emprunteur (age, travailleur étranger, situation profesionnelle, …)
+
+Plusieurs attributs sont discrétisés (par exemple, l’attribut 6 « Savings account/bonds »). Il aurait pu être intéressant de disposer de la valeur précise de ces informations, qui a effectué une discrétisation peut-être plus adaptée par la suite
+
+Le dernier attribut correspond à la décision prise par la banque d’attribuer ou non le crédit. On comptabilise 700 accords et 300 refus.
+
+On peut remarquer que certaines données couramment utilisées ne sont pas présentes (par exemple, le taux d’endettement ou le salaire).
+
+\section{Analyse univariée des données}
+\subsection{Analyse statistique}
+\subsubsection{Attributs numériques}
+Le tableau suivant présente les propriétés statistiques des attributs numériques : 
+
+\begin{tabular}{|c|c|c|c|c|c|c|c|}
+\hline 
+    & Duration in month & Credit amount & Installment rate & Present residence rate & Age & Number of existing credits & Nb of liable people \\ 
+\hline 
+• & • & • & • & • & • & • & • \\ 
+\hline 
+• & • & • & • & • & • & • & • \\ 
+\hline 
+• & • & • & • & • & • & • & • \\ 
+\hline 
+• & • & • & • & • & • & • & • \\ 
+\hline 
+• & • & • & • & • & • & • & • \\ 
+\hline 
+• & • & • & • & • & • & • & • \\ 
+\hline 
+• & • & • & • & • & • & • & • \\ 
+\hline 
+\end{tabular}
+
+\end{document}
