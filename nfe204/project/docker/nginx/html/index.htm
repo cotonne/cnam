@@ -1,0 +1,319 @@
+<html>
+<head>
+    <title>Influencers sur Internet</title>
+    <meta charset="UTF-8">
+    <style>
+        .node {
+            stroke: #000;
+            stroke-width: 1.5px;
+        }
+
+        line.link {
+            file: none;
+            stroke: #999;
+            stroke-width: 2px;
+        }
+
+        line.link.write {
+            stroke: #F00;
+        }
+
+        line.link.mention {
+            stroke: #0f0;
+        }
+
+        line.link.reply {
+            stroke: #00f;
+        }
+
+        div.tooltip {
+            position: absolute;
+            width: 200px;
+            padding: 2px;
+            font: 12px sans-serif;
+            background: lightsteelblue;
+            border: 0px;
+            border-radius: 8px;
+            pointer-events: none;
+        }
+
+        text {
+            fill: #000;
+            font: 10px sans-serif;
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body>
+<h1>Les influenceurs sur Internet</h1>
+<div>Cette page correspond au travail effectué dans le cadre de l'UE NFE204 avec le
+    CNAM de Paris.
+</div>
+<h2>Réponse aux tweets</h2>
+<div>
+    Comment lire ce graph?<br/>
+    <p>
+    Le graph suivant représente les 20 personnes avec le plus de réponses positives à
+    leurs tweets. Une analyse sémantique est effectuée sur les différents tweets.
+    </p>
+    <p>
+        Les twittos sont représentés en orange, les messages en vert.
+        Les réponses (REPLY) sont les flèches bleus.
+    </p>
+    <p>
+        Une personne influente est vue comme un twittos ayant écrit un ou plusieurs messages
+        qui ont reçu des réponses positives.
+    </p>
+</div>
+<div id="response-to-tweets" class="response-to-tweets">
+</div>
+
+
+</body>
+<script src="https://d3js.org/d3.v4.js"></script>
+<script>
+
+    // Based on
+    //  - https://bl.ocks.org/HarryStevens/f636199a46fc4b210fbca3b1dc4ef372
+    //  - http://d3indepth.com/force-layout/
+    //  - https://bl.ocks.org/mbostock/533daf20348023dfdd76
+    //  - http://bl.ocks.org/dem42/e10e933990ee662c9cbd
+
+    var div = d3.select("body").append("div")
+        .attr("class", "tooltip")
+        .style("opacity", 0);
+
+    var simulation;
+    var link;
+    var node;
+
+    function populateGraph(error, graph) {
+        if (error) return;
+
+
+        var width = window.innerWidth,
+            height = window.innerHeight,
+            sizeDivisor = 100,
+            nodePadding = 2.5;
+
+        var container = d3.select('#response-to-tweets');
+        var svg = container
+            .append("svg")
+            .attr("width", width)
+            .attr("height", height);
+        // force layout setup
+        var force = d3.forceSimulation()
+            .force("forceX", d3.forceX().strength(.1).x(width * .5))
+            .force("forceY", d3.forceY().strength(.1).y(height * .5))
+            .force("center", d3.forceCenter().x(width * .5).y(height * .5))
+            .force("charge", d3.forceManyBody().strength(-100));
+
+        var nodes = [];
+// Ensemble de [source: index de l'élement de le tableau nodes,target: ]
+        var links = [];
+        for (var i = 0; i < graph.data.length; i++) {
+            var group = graph.data[i];
+            for (var j = 0; j < group.length; j++) {
+                var e = group[j];
+                if (isUserOrTweet(e)) {
+                    nodes.push(toNode(e));
+                } else if (!isAutoReference(e)) {
+                    links.push(toLink(e));
+                }
+            }
+
+        }
+
+        //.charge(-200).linkDistance(30).size([width, height]);
+
+
+        simulation = force
+            .nodes(nodes)
+            // Surcharge de la méthode id pour utiliser notre méthode
+            .force('link', d3.forceLink().id(function (d) {
+                return d.id;
+            }).distance(40).links(links))
+            .force("collide", d3.forceCollide().strength(.5).radius(function (d) {
+                return d.radius + nodePadding;
+            }).iterations(1))
+            .on("tick", function (d) {
+                node
+                    .attr("cx", function (d) {
+                        return d.x;
+                    })
+                    .attr("cy", function (d) {
+                        return d.y;
+                    })
+            });
+
+        var defs = svg.append("svg:defs");
+        defs.append("svg:marker")
+            .attr("id", "end")
+            .attr("refX", 15)
+            .attr("refY", 6)
+            .attr("markerWidth", 12)
+            .attr("markerHeight", 12)
+            .attr("orient", "auto")
+            .append("svg:path")
+            .attr("d", "M2,2 L2,11 L10,6 L2,2");
+
+// render relationships as lines
+        link = svg.selectAll(".link");
+        link = link.data(links).enter()
+            .append("line")
+            .attr("class", function (d) {
+                return "link " + d.type;
+            })
+            .attr("marker-end", "url(#end)");
+
+// render nodes as circles, css-class from label
+        node = svg.selectAll(".node")
+            .data(nodes).enter()
+            .append("circle")
+            //.merge()
+            .attr("fill", function (d) {
+                return color(d);
+            })
+            .attr("class", function (d) {
+                return "node " + d.label
+            })
+            .attr("r", 10)
+            .on("mouseover", function (d) {
+                div.transition()
+                    .duration(200)
+                    .style("opacity", .9);
+                div.html(formatTooltip(d))
+                    .style("left", (d3.event.pageX) + "px")
+                    .style("top", (d3.event.pageY - 28) + "px");
+            })
+            .on("mouseout", function (d) {
+                div.transition()
+                    .duration(500)
+                    .style("opacity", 0);
+            })
+            .call(d3.drag()
+                .on("start", dragstarted)
+                .on("drag", dragged)
+                .on("end", dragended));
+
+        node.append("text")
+            .attr("x", 12)
+            .attr("dy", ".35em")
+            .text(function (d) {
+                return isTweet(d) ? 'T' : 'U';
+            });
+
+// force feed algo ticks for coordinate computation
+        force.on('tick', ticked);
+    }
+
+    function ticked() {
+        link.attr("x1", function (d) {
+            return d.source.x;
+        })
+            .attr("y1", function (d) {
+                return d.source.y;
+            })
+            .attr("x2", function (d) {
+                return d.target.x;
+            })
+            .attr("y2", function (d) {
+                return d.target.y;
+            });
+
+        node.attr("cx", function (d) {
+            return d.x;
+        })
+            .attr("cy", function (d) {
+                return d.y;
+            });
+    }
+
+    function isUserOrTweet(e) {
+        return e.metadata.labels;
+    }
+
+    function toNode(e) {
+        return {
+            id: e.metadata.id,
+            label: e.metadata.labels[0],
+            data: e.data
+        };
+    }
+
+    function isTweet(d) {
+        return d.label === 'TWEET';
+    }
+
+    function formatTooltip(d) {
+        if (isTweet(d)) {
+            return formatTweetTooltip(d);
+        }
+        return formatUserTooltip(d);
+    }
+
+    function formatTweetTooltip(d) {
+        var data = d.data;
+        return "<ul>" +
+            "<li><b>ID</b> : " + data.ID + "</li>" +
+            "<li><b>TEXT</b> : " + data.TEXT + "</li>" +
+            "<li><b>POLARITY</b> : " + data.POLARITY + "</li>" +
+            "<li><b>SUBJECTIVITY</b> : " + data.SUBJECTIVITY + "</li>" +
+            "</ul>";
+    }
+
+    function formatUserTooltip(d) {
+        var data = d.data;
+        return "<ul>" +
+            "<li><b>ID</b> : " + data.ID + "</li>" +
+            "<li><b>NAME</b> : " + data.NAME + "</li>" +
+            "<li><b>PSEUDO</b> : " + data.PSEUDO + "</li>" +
+            "<li><b>LOCATION</b> : " + data.LOCATION + "</li>" +
+            "</ul>";
+    }
+
+    function isAutoReference(e) {
+        return extractIdFromUrl(e.start) === extractIdFromUrl(e.end);
+    }
+
+    function toLink(e) {
+        return {
+            source: extractIdFromUrl(e.start),
+            target: extractIdFromUrl(e.end),
+            type: e.metadata.type.toLowerCase()
+        };
+    }
+
+    function extractIdFromUrl(url) {
+        var l = url.lastIndexOf('/');
+        return url.substring(l + 1);
+    }
+
+    function dragstarted(d) {
+        if (!d3.event.active) simulation.alphaTarget(.03).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+
+    function dragged(d) {
+        d.fx = d3.event.x;
+        d.fy = d3.event.y;
+    }
+
+    function dragended(d) {
+        if (!d3.event.active) simulation.alphaTarget(.03);
+        d.fx = null;
+        d.fy = null;
+    }
+
+    function color(d) {
+        //var color = d3.scaleOrdinal(["#66c2a5", "#fc8d62", "#8da0cb", "#e78ac3", "#a6d854", "#ffd92f", "#e5c494", "#b3b3b3"]);
+        return d.label === 'TWEET' ? "#66c2a5" : "#fc8d62";
+    }
+
+
+    d3.json("/response-to-tweets", populateGraph);
+
+</script>
+
+</html>

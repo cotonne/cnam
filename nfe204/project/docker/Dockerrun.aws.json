@@ -1,0 +1,93 @@
+{
+  "AWSEBDockerrunVersion": 2,
+  "volumes": [
+    {
+      "name": "neo4j",
+      "host": {
+        "sourcePath": "/var/app/current/neo4j"
+      }
+    },
+    {
+      "name": "nginx-html",
+      "host": {
+        "sourcePath": "/var/app/current/nginx/html"
+      }
+    },
+    {
+      "name": "nginx-proxy-conf",
+      "host": {
+        "sourcePath": "/var/app/current/nginx/proxy/conf.d"
+      }
+    } ,
+    {
+      "name": "python-script",
+      "host": {
+        "sourcePath": "/var/app/current/python"
+      }
+    }  
+  ],
+  "containerDefinitions": [
+
+    {
+      "name": "neo4j",
+      "image": "neo4j:latest",
+      "essential": true,
+      "memory": 768,
+      "mountPoints": [
+        {
+          "sourceVolume": "neo4j",
+          "containerPath": "/data"
+        }
+      ]
+    },
+
+    {
+      "name": "python",
+      "image": "python:3.6-alpine3.4",
+      "essential": true,
+      "memory": 64,
+      "command": [
+        "/bin/sh",
+        "/script/start.sh"
+      ],
+      "links": [
+        "neo4j"
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "python-script",
+          "containerPath": "/script"
+        }
+      ]
+    },
+
+    {
+      "name": "nginx-proxy",
+      "image": "nginx:latest",
+      "essential": true,
+      "memory": 128,
+      "portMappings": [
+        {
+          "hostPort": 80,
+          "containerPort": 80
+        }
+      ],
+      "links": [
+        "neo4j"
+      ],
+      "mountPoints": [
+        {
+          "sourceVolume": "nginx-html",
+          "containerPath": "/etc/nginx/html",
+          "readOnly": true
+        },
+        {
+          "sourceVolume": "nginx-proxy-conf",
+          "containerPath": "/etc/nginx/conf.d",
+          "readOnly": true
+        }
+      ]
+    }
+
+  ]
+}
