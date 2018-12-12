@@ -73,20 +73,15 @@ data_test = pd.read_csv("data_test.csv", header=0, sep=";",
 X_scaled = preprocessing.StandardScaler().fit_transform(X)
 X_train, X_test, y_train, y_test = train_test_split(X_scaled, y.values.ravel(), test_size=0.20, random_state=42)
 
-#### SVC
-tuned_parameters = {
-  'C': map(lambda l: 10 ** (-l), range(-2, 2)),
-  'kernel': ['linear', 'poly', 'rbf', 'sigmoid'],
-  #'degree': range(2, 5),
-  'gamma' : map(lambda l: 10 ** (-l), range(-4, 4))
-  }
+C = 1 # paramètre de régularisation
+tuned_parameters = {'C': map(lambda l: 10 ** l, range(-5, 5))}
 
 clf = GridSearchCV(
-  svm.SVC(),
+  svm.LinearSVC(),
   tuned_parameters,
-  #cv=5,
+  cv=5,
   n_jobs=4,
-  verbose=2,
+  verbose=True,
   # scoring=scoring
   )
 
@@ -97,21 +92,10 @@ print "No Score test = {}".format(clf.best_estimator_.score(X_test, y_test))
 pred_test = clf.best_estimator_.predict(data_test)
 print pred_test
 df = pd.DataFrame(pred_test)
-df.to_csv("python_svm.csv")
+df.to_csv("python_linear-svc.csv")
 
-cparams = np.array(range(-2, 2))
-kparams = np.array(['linear', 'poly', 'rbf', 'sigmoid'])
-gparams = np.array(range(-4, 4))
-xx, yy, zz= np.meshgrid(cparams, kparams, gparams)
-
-# affichage sous forme de wireframe des resultats des modeles evalues
-from mpl_toolkits.mplot3d import Axes3D
 fig = plt.figure()
-ax = fig.gca(projection='3d')
-Z = clf.cv_results_['mean_test_score'].reshape((len(xx), len(yy), len(zz)))
-#ax = fig.add_subplot(111, projection='3d')
-ax.plot_surface(xx, yy, Z, cmap=colormap.coolwarm)
-ax.set_xlabel("Profondeur")
-ax.set_ylabel("Nombre d'estimateurs")
-ax.set_zlabel("Score moyen")
+plt.plot(range(-5, 5),clf.cv_results_['mean_test_score'])
+plt.xlabel('10^x')
+plt.ylabel('Test score')
 plt.show()
