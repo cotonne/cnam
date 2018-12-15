@@ -10,13 +10,11 @@ from sklearn.model_selection import train_test_split, GridSearchCV
 from matplotlib import cm as colormap
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 
-filename = 'data_train.csv'
+filename = 'data_train_ncp_15.csv'
 delimiter = ';'
 data = []
 
 X = pd.read_csv(filename, header=0, sep=delimiter, error_bad_lines=False,
-                names=["id", "centre", "country", "gender", "bmi", "age", "egfr", "sbp", "dbp", "hr",
-                       "lvef", "lvefbin", "copd", "hypertension", "previoushf", "afib", "cad"],
                 usecols=["centre", "country", "gender", "bmi", "age", "egfr", "sbp", "dbp", "hr",
                          "copd", "hypertension", "previoushf", "afib", "cad"],
                 dtype={
@@ -26,14 +24,10 @@ X = pd.read_csv(filename, header=0, sep=delimiter, error_bad_lines=False,
                     "hypertension": 'S4', "previoushf": 'S4', "afib": 'S4', "cad": 'S4'})
 
 y = pd.read_csv(filename, header=0, sep=delimiter, error_bad_lines=False,
-                names=["id", "centre", "country", "gender", "bmi", "age", "egfr", "sbp", "dbp", "hr",
-                       "lvef", "lvefbin", "copd", "hypertension", "previoushf", "afib", "cad"],
                 usecols=["lvefbin"],
                 dtype={"lvefbin": 'S4'})
 
-data_test = pd.read_csv("data_test.csv", header=0, sep=";",
-                        names=["id", "centre", "country", "gender", "bmi", "age", "egfr", "sbp", "dbp", "hr",
-                               "copd", "hypertension", "previoushf", "afib", "cad"],
+data_test = pd.read_csv("data_test_ncp_15.csv", header=0, sep=";",
                         usecols=["centre", "country", "gender", "bmi", "age", "egfr", "sbp", "dbp", "hr",
                                  "copd", "hypertension", "previoushf", "afib", "cad"],
                         dtype={

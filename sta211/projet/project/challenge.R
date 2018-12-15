@@ -172,8 +172,10 @@ boxplot(p)
 
 # dbp supplémentaires car redondantes avec sbp
 # c("gender", "bmi", "age", "sbp", "hr", "hypertension", "previoushf", "cad")
-index_des_variables_supplementaires <- findIndex(X, c("centre", "country", "lvef", "lvefbin", "dbp"))
+index_des_variables_supplementaires <- findIndex(X, c("centre", "country", "lvef", "lvefbin"))
 res <- FAMD(X, ncp = 5, sup.var = index_des_variables_supplementaires)
+res <- FAMD(X, ncp = 5, sup.var = index_des_variables_supplementaires)
+
 plot(res)
 plot.FAMD(res, choix = c("quanti"), axes = c(1, 2))
 plot.FAMD(res, choix = c("quanti"), axes = c(3, 4))
@@ -182,7 +184,7 @@ plot.FAMD(res, choix = c("quali"), axes = c(1, 3))
 plot.FAMD(res, choix = c("ind"), lab.ind = FALSE, axes = c(1, 3))
 plot.FAMD(res, choix = c("quanti"), axes = c(2, 3))
 
-imputed_data <- missMDA::imputeFAMD(data_train, ncp = 15)
+imputed_data <- missMDA::imputeFAMD(data_train[,c(quali, quanti)], ncp = 15)
 
 # Retrait des variables non correlées
 index_des_variables_supplementaires <- findIndex(X, c("centre", "country", "lvef", "lvefbin", "egfr",  "afib",  "copd"))
@@ -226,3 +228,4 @@ res_test[res_test == TRUE] <- "good"
 res_test[res_test == FALSE] <- "bad"
 write(res_test, file = "my_pred.csv")
 read_pred("20181123_reg_pred.csv")
+read_pred("python_mlp.csv")
