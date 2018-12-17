@@ -74,9 +74,14 @@ for(i in c("gender", "copd", "hypertension", "previoushf", "afib", "cad" )) {
   X <- label_encode(X, i)
 }
 
+X[,quanti] <- scale(X[,quanti])
+
 X[,"lvefbin"] <- c(NO_NA[, "lvefbin"], ALL_NA[,"lvefbin"])
 X[X[,"lvefbin"] == 1,"lvefbin"] <- 'bad'
 X[X[,"lvefbin"] == 2,"lvefbin"] <- 'good'
+
+# X[,quanti] <- scale(X[,quanti])
+
 
 write.table(X, "clean_data_train.csv", sep=";", quote=FALSE, row.names = FALSE)
 
@@ -101,10 +106,30 @@ write.table(scaled_test, "clean_data_test.csv", sep=";", quote=FALSE, row.names 
 
 
 library(SOMbrero)
-X_all <- X
+X_all <- X_imputed
+for(i in c("gender", "copd", "hypertension", "previoushf", "afib", "cad" )) {
+  X_all <- label_encode(X_all, i)
+}
+
+X_all[,quanti] <- scale(X_all[,quanti])
+
+
+# c("gender", "bmi", "age", "sbp", "hr", "hypertension", "previoushf", "cad")
+# sup = "egfr", "sbp", "dbp", "hr" "centre", "country", "copd",  "afib"
 X_all[,"lvefbin"] <- NULL
-X_all <- scale(X_all)
-som <- SOMbrero::trainSOM(x.data = X_all, dimension = c(5,5), verbose=TRUE, nb.save=5)
+X_all[,"centre"] <- NULL
+X_all[,"country"] <- NULL
+X_all[,"copd"] <- NULL
+X_all[,"afib"] <- NULL
+X_all[,"s_dbp"] <- X_all[,"sbp"] - X_all[,"dbp"]
+X_all[,"dbp"] <- NULL
+X_all[,"sbp"] <- NULL
+
+
+
+som <- SOMbrero::trainSOM(x.data = X_all, dimension = c(3, 3), verbose=TRUE, nb.save=50)
+plot(som, what="add", type="pie", variable=X[,"lvefbin"])
+
 # https://cran.r-project.org/web/packages/SOMbrero/vignettes/doc-numericSOM.html
 plot(som, what="energy")
 
