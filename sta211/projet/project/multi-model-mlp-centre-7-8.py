@@ -1,9 +1,9 @@
 # coding=utf-8
 
-# Modèle multiple : 1 / cluster
+# Modèle multiple : 1 / centre
 #
 # Pour le jeu d'apprentissage:
-# - On détermine des clusters via K-Means
+# - 3 modèles : 1 pour le centre 7, 1 pour le centre 8 et 1 pour le reste
 # - Pour chaque cluster, on calcule un modèle de type Réseau de Neurone (MLP)
 #   * Une couche cachée de 64 neurones, activation ReLU, régularization et DropOut pour réduire le sur-apprentissage
 #   * Une deuxième couche cachée avec les mêmes hyper-paramètres
@@ -45,6 +45,7 @@ batch_size = 100
 nb_epoch = 1000
 learning_rate = 0.5
 
+
 def build(x, y):
     #  On créé un réseau de neurones vide.
     from keras.models import Sequential
@@ -54,20 +55,6 @@ def build(x, y):
     #  On ajoute des couches avec la fonction add.
     from keras.layers import Dense, Activation, Dropout
     from keras.regularizers import l2
-
-    # https://www.tensorflow.org/tutorials/keras/overfit_and_underfit
-    # L1 regularization, where the cost added is proportional
-    # to the absolute value of the weights coefficients (i.e. to what is
-    # called the "L1 norm" of the weights).
-    #
-    # L2 regularization, where the cost added is proportional to the square
-    # of the value of the weights coefficients (i.e. to what is called the
-    # "L2 norm" of the weights). L2 regularization is also called weight decay
-    # in the context of neural networks. Don't let the different name confuse you:
-    # weight decay is mathematically the exact same as L2 regularization.
-
-    #  - couche de projection linéaire (couche complètement connectée) de taille 10
-    # keras.layers.Dense(16, kernel_regularizer=keras.regularizers.l2(0.001), activation=tf.nn.relu),
     model.add(Dense(64, input_dim=x.shape[1], name='fc-cache1', kernel_regularizer=l2(0.001)))
     model.add(Activation('relu'))
     model.add(Dropout(0.5))
@@ -108,29 +95,12 @@ X = X.drop("lvefbin", 1)
 # X_train = preprocessing.StandardScaler().fit_transform(X)
 X_train = pd.DataFrame(X, columns=X.columns)
 
-from sklearn.cluster import KMeans
-
-kmeans = KMeans(n_clusters=6, n_init=10, init='k-means++').fit(X_train)
-
-X_train['cluster'] = kmeans.labels_
-
 Y_train = pd.read_csv(filename, header=0, sep=delimiter, error_bad_lines=False,
                       usecols=["lvefbin"],
                       dtype={"lvefbin": 'S4'})
-labels, Y_train = np.unique(Y_train, return_inverse=True)
-
-print("Taille cluster")
-group, size_clusters = np.unique(kmeans.labels_, return_counts=True)
-
-
-xx = np.concatenate((kmeans.labels_.reshape(1, -1), Y_train.reshape(1, -1)), axis=0).transpose()
-xx = xx[xx[:, 1] == 1]
-group, count_1 = np.unique(xx, return_counts=True, axis=0)
-
-print(count_1/size_clusters)
 
 models = [build(X_train[X_train['cluster'] == i].drop("cluster", 1), Y_train[X_train['cluster'] == i]) for i in
-          np.unique(kmeans.labels_)]
+          np.unique(X_train['cluster'])]
 
 
 def predict(i):
@@ -140,6 +110,7 @@ def predict(i):
     y_true = Y_train[X_train['cluster'] == i]
     from sklearn.metrics import accuracy_score
     return accuracy_score(col_bis, y_true)
+
 
 print("Apprentissage / Cluster")
 print([predict(i) for i in np.unique(kmeans.labels_)])
@@ -160,13 +131,3 @@ col = np.array(col)
 col_bis = (col >= 0.5).astype(int)
 df = pd.DataFrame(labels[col_bis])
 df.to_csv(csv_res, index=False, encoding='utf-8')
-
-# util.saveModel(model, "model-ex2")
-
-# La fonction de coût de l’Eq. (3) est-elle convexe par rapports aux paramètres W, b du modèle ? Non
-# Avec un pas de gradient bien choisi, peut-on assurer la convergence vers le minimum global de la solution ? Non
-
-# Façon dont les paramètres du modèles sont initialisés dans les différentes couches
-# model.add(Dense(64,
-#                 kernel_initializer='random_uniform',
-#                 bias_initializer='zeros'))

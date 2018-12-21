@@ -81,8 +81,15 @@ data_train <- data_train[which(15 <= data$bmi), ]
 data_train <- data_train[which(data$bmi <= 50), ]
 data_train <- data_train[which(data$age <= 122), ]
 NO_NA <- na.omit(data_train)
+
+res <- FAMD(NO_NA, ncp = 30)
+kaisen_criterion = 100/nrow(res$eig)
+colors <- as.double(t(lapply(as.double(res$eig[,2]), function(x) if(x >= kaisen_criterion) 1 else 0)))
+barplot(res$eig[1:nrow(res$eig),2], main="Eigen vectors - selected vectors are in black", names.arg = paste("dim", seq(1, nrow(res$eig))), col=colors)
+
+
 a_sample <- sample(nrow(NO_NA), 400)
-X <- data_train
+X <- NO_NA
 X <- NO_NA[a_sample,]
 Y <- NO_NA[a_sample,"lvef"]
 
@@ -90,10 +97,37 @@ plot(X[, c("gender", "hypertension")])
 
 hist(Y)
 
+library("dplyr")
+
+NO_NA <- NO_NA %>% filter( bmi < quantile(bmi, 0.99))
+NO_NA <- NO_NA %>% filter( age < quantile(age, 0.99))
+NO_NA <- NO_NA %>% filter( egfr < quantile(egfr, 0.99))
+NO_NA <- NO_NA %>% filter( sbp < quantile(sbp, 0.99))
+NO_NA <- NO_NA %>% filter( dbp < quantile(dbp, 0.99))
+NO_NA <- NO_NA %>% filter( hr < quantile(hr, 0.99))
+
+NO_NA <- NO_NA %>% filter( bmi > quantile(bmi, 0.01))
+NO_NA <- NO_NA %>% filter( age > quantile(age, 0.01))
+NO_NA <- NO_NA %>% filter( egfr > quantile(egfr, 0.01))
+NO_NA <- NO_NA %>% filter( sbp > quantile(sbp, 0.01))
+NO_NA <- NO_NA %>% filter( dbp > quantile(dbp, 0.01))
+NO_NA <- NO_NA %>% filter( hr > quantile(hr, 0.01))
+
+for(i in c(8)) { # unique(X[,"centre"])[1:21]
+  print(i)
+  print(sum(X[,"centre"] == i, na.rm=TRUE))
+  chart.Correlation(X[X[,"centre"] == i,quanti])
+}
+
 # Lien entre variables quanti
 chart.Correlation(X[,quanti])
 
 chart.Correlation(X[,quanti], method = "spearman")
+
+for(i in quanti) {
+  print(i)
+  print(shapiro.test(NO_NA[1:500,i]))
+}
 
 # test de spearman
 for(i in seq(1,length(quanti) -1)) {
@@ -172,7 +206,7 @@ boxplot(p)
 
 # dbp supplémentaires car redondantes avec sbp
 # c("gender", "bmi", "age", "sbp", "hr", "hypertension", "previoushf", "cad")
-index_des_variables_supplementaires <- findIndex(X, c("centre", "country", "lvef", "lvefbin"))
+index_des_variables_supplementaires <- findIndex(X, c("centre", "country", "lvef", "lvefbin", "dbp"))
 res <- FAMD(X, ncp = 5, sup.var = index_des_variables_supplementaires)
 res <- FAMD(X, ncp = 5, sup.var = index_des_variables_supplementaires)
 
@@ -181,6 +215,8 @@ plot.FAMD(res, choix = c("quanti"), axes = c(1, 2))
 plot.FAMD(res, choix = c("quanti"), axes = c(3, 4))
 plot.FAMD(res, choix = c("quanti"), axes = c(1, 3))
 plot.FAMD(res, choix = c("quali"), axes = c(1, 3))
+plot.FAMD(res, choix = c("quali"), axes = c(1, 2))
+
 plot.FAMD(res, choix = c("ind"), lab.ind = FALSE, axes = c(1, 3))
 plot.FAMD(res, choix = c("quanti"), axes = c(2, 3))
 
@@ -204,7 +240,7 @@ res <- DMFA(w)
 #
 # AFD
 #
-imputed_data <- missMDA::imputeFAMD(data_train, ncp = 5)
+imputed_data <- missMDA::imputeFAMD(data_train, ncp = 20)
 d <- imputed_data$completeObs[,c("gender", "bmi", "age", "sbp", "hr", "hypertension", "previoushf", "cad", "lvefbin")]
 library(MASS)
 fit <- lda(lvefbin ~ ., data=d)

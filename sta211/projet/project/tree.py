@@ -5,38 +5,25 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from matplotlib import cm as colormap
 from sklearn.ensemble import ExtraTreesClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV
-from matplotlib import cm as colormap
-from mpl_toolkits.mplot3d import axes3d, Axes3D
 
-filename = 'data_train_ncp_15.csv'
+filename = 'clean_data_train.csv'
+filename_test = 'clean_data_test.csv'
 delimiter = ';'
 data = []
 
-X = pd.read_csv(filename, header=0, sep=delimiter, error_bad_lines=False,
-                usecols=["centre", "country", "gender", "bmi", "age", "egfr", "sbp", "dbp", "hr",
-                         "copd", "hypertension", "previoushf", "afib", "cad"],
-                dtype={
-                    "centre": 'S4',
-                    "country": 'S4', "gender": 'S4', "bmi": 'float', "age": 'float', "egfr": 'float',
-                    "sbp": 'float', "dbp": 'float', "hr": 'float', "copd": 'S4',
-                    "hypertension": 'S4', "previoushf": 'S4', "afib": 'S4', "cad": 'S4'})
-
+X = pd.read_csv(filename, header=0, sep=delimiter, error_bad_lines=False)
+X = X.drop("lvefbin", 1)
+# X_train = preprocessing.StandardScaler().fit_transform(X)
 y = pd.read_csv(filename, header=0, sep=delimiter, error_bad_lines=False,
                 usecols=["lvefbin"],
-                dtype={"lvefbin": 'S4'})
+                dtype={"lvefbin": 'category'})
 
-data_test = pd.read_csv("data_test_ncp_15.csv", header=0, sep=";",
-                        usecols=["centre", "country", "gender", "bmi", "age", "egfr", "sbp", "dbp", "hr",
-                                 "copd", "hypertension", "previoushf", "afib", "cad"],
-                        dtype={
-                            "centre": 'S4',
-                            "country": 'S4', "gender": 'S4', "bmi": 'float', "age": 'float', "egfr": 'float',
-                            "sbp": 'float', "dbp": 'float', "hr": 'float', "copd": 'S4',
-                            "hypertension": 'S4', "previoushf": 'S4', "afib": 'S4', "cad": 'S4'})
+data_test = pd.read_csv(filename_test, header=0, sep=delimiter, error_bad_lines=False)
 
-print len(data_test)
+print(len(data_test))
 
 if len(data_test) != 987:
     sys.exit("Missing values")
@@ -46,9 +33,9 @@ X_train, X_test, y_train, y_test = train_test_split(X, y.values.ravel(), test_si
 # Basic extra tree
 clf = ExtraTreesClassifier(n_estimators=100)
 clf.fit(X_train, y_train)
-print "ExtraTreesClassifier"
-print "Score apprentissage  = %f" % clf.score(X_train, y_train)
-print "Score test = %f" % clf.score(X_test, y_test)
+print("ExtraTreesClassifier")
+print("Score apprentissage  = %f" % clf.score(X_train, y_train))
+print("Score test = %f" % clf.score(X_test, y_test))
 
 # Grid Search
 tuned_parameters = {'n_estimators': range(50, 450, 50)
@@ -57,12 +44,6 @@ tuned_parameters = {'n_estimators': range(50, 450, 50)
     , 'max_depth': range(1, 12, 2)
                     }
 
-tuned_parameters = {  # 'n_estimators': range(450, 450, 50)
-    'min_samples_leaf': range(1, 10, 2)
-    , 'min_samples_split': range(2, 10, 2)
-    , 'max_depth': range(1, 12, 2)
-}
-
 clf = GridSearchCV(ExtraTreesClassifier(max_depth=5),
                    tuned_parameters,
                    cv=5,
@@ -70,18 +51,20 @@ clf = GridSearchCV(ExtraTreesClassifier(max_depth=5),
                    verbose=True
                    )
 
-clf.fit(X_train, y_train)
-print "Optimise ExtraTreesClassifier"
-print "Score apprentissage  = %f" % clf.score(X_train, y_train)
-print "Score test = %f" % clf.score(X_test, y_test)
+clf.fit(X, y.values.ravel())
+print("Optimise ExtraTreesClassifier")
+print("Score apprentissage  = %f" % clf.score(X_train, y_train))
+print("Score test = %f" % clf.score(X_test, y_test))
 
-print "Params"
-print clf.best_params_
-print "Best score"
-print clf.best_score_
+print("Params")
+print(clf.best_params_)
+print("Best score")
+print(clf.best_score_)
+print("Variable importance")
+print(clf.best_estimator_.feature_importances_)
 
 pred_test = clf.best_estimator_.predict(data_test)
-print pred_test
+print(pred_test)
 df = pd.DataFrame(pred_test)
 df.to_csv("python_extratrees.csv")
 
