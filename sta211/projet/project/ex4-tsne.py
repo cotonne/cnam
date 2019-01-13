@@ -2,19 +2,7 @@ import pandas as pd
 from sklearn import manifold
 from sklearn import preprocessing
 
-from util import convexHulls, best_ellipses, visualization
-
-def codageDisjonctifComplet(X, name):
-    values = X[name].values.reshape(-1, 1)
-    le = preprocessing.LabelEncoder()
-    oneHotEncodedValues = le.fit_transform(values).reshape(-1, 1)
-    from sklearn.preprocessing import OneHotEncoder
-    onehotencoder = OneHotEncoder()
-    features = pd.DataFrame(onehotencoder.fit_transform(oneHotEncodedValues).toarray())
-    features.columns = onehotencoder.get_feature_names()
-    X = X.drop(columns=[name])
-    return X.join(features, lsuffix=name)
-
+from util import convexHulls, best_ellipses, visualization, codageDisjonctifComplet
 
 filename = 'data_train_ncp_15.csv'
 delimiter = ';'

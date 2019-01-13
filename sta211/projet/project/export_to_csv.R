@@ -3,7 +3,7 @@ quali <- c("centre", "country", "gender", "copd", "hypertension", "previoushf", 
 all <- c(quali, quanti)
 
 save_to_csv <- function (x, name, add = FALSE) {
-  imputed_data <- missMDA::imputeFAMD(x[, all], ncp = 15)
+  imputed_data <- missMDA::imputeFAMD(x[, all], ncp = 15, method = "EM")
   
   X_imputed <- imputed_data$completeObs 
   
@@ -20,7 +20,7 @@ save_to_csv <- function (x, name, add = FALSE) {
   if(add) {
     X_imputed[, "lvefbin"] <- x[, "lvefbin"]
   }
-  write.table(X_imputed, name, sep=";", quote=FALSE)
+  # write.table(X_imputed, name, sep=";", quote=FALSE)
 }
 
 #
@@ -36,5 +36,15 @@ file <- "data_test.rda"
 load(file)
 save_to_csv(data_test, 'data_test_ncp_15.csv')
 
-
-
+setwd("/home/yvan/Documents/cnam/sta211/projet/project/")
+load("missMDA_Regularizedd.rda")
+for(i in c("centre", "country", "gender", "copd", "hypertension", "previoushf", "afib", "cad" )) {
+  print(i)
+  print(table(data2[,i]))
+  l <- levels(data2[,i])
+  l <- unlist(lapply(l, FUN = function(level) {gsub(".*_([0-9]*)", "\\1", level)}))
+  data2[, i] <- as.factor(as.numeric(data2[, i]))
+  levels(data2[, i]) <- l
+  print(table(data2[,i]))
+}
+write.table(data2, "missMDA_Regularized.csv", sep=";", quote=FALSE)

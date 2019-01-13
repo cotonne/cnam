@@ -1,6 +1,20 @@
 import numpy
+import pandas as pd
 
 from keras.models import model_from_yaml
+from sklearn import preprocessing
+
+
+def codageDisjonctifComplet(X, name):
+    values = X[name].values.reshape(-1, 1)
+    le = preprocessing.LabelEncoder()
+    oneHotEncodedValues = le.fit_transform(values).reshape(-1, 1)
+    from sklearn.preprocessing import OneHotEncoder
+    onehotencoder = OneHotEncoder(categories='auto')
+    features = pd.DataFrame(onehotencoder.fit_transform(oneHotEncodedValues).toarray())
+    features.columns = onehotencoder.get_feature_names()
+    X = X.drop(columns=[name])
+    return X.join(features, lsuffix=name)
 
 
 def saveModel(model, savename):

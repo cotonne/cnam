@@ -38,7 +38,7 @@ imputation <- function(data) {
   clean_data <- rbind(NO_NA, ALL_NA)
   
   # /!\ Ne pas inclure lvefbin => sinon imputation en prenant la variable cible!
-  imputed_data <- missMDA::imputeFAMD(clean_data[, all], ncp = 5)
+  imputed_data <- missMDA::imputeFAMD(clean_data[, all], ncp = 2)
   return(imputed_data$completeObs)
 }
 

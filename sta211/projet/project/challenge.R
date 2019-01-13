@@ -61,6 +61,8 @@ quali <- c("centre", "country", "gender", "copd", "hypertension", "previoushf", 
 
 file <- "data_train.rda"
 load(file)
+individus_avec_une_maladie <- (data_train[,"copd"] == 1) | (data_train[,"hypertension"] == 1) | (data_train[,"previoushf"] == 1) | (data_train[,"afib"] == 1) | (data_train[,"cad"] == 1)
+
 
 #
 # Données manquantes
@@ -70,6 +72,12 @@ for(i in append(quanti, quali)) {
   vector_size <- length(data_train[,i])
   percent <- round(100 * number_of_missigin_values/vector_size, 2)
   print(paste(c(i, percent, "%"), collapse = " "))
+}
+
+for(i in quali) {
+  print(i)
+  print(table(na.omit(data_train[data_train[,"centre"] == 8,i]))/NROW(na.omit(data_train[data_train[,"centre"] == 8,i])))
+  print(table(na.omit(data_train[!(data_train[,"centre"] == 8),i]))/NROW(na.omit(data_train[!(data_train[,"centre"] == 8),i])))
 }
 
 summary(data_train[is.na(data_train$bmi),])
@@ -82,7 +90,7 @@ data_train <- data_train[which(data$bmi <= 50), ]
 data_train <- data_train[which(data$age <= 122), ]
 NO_NA <- na.omit(data_train)
 
-res <- FAMD(NO_NA, ncp = 30)
+# res <- FAMD(NO_NA, ncp = 30)
 kaisen_criterion = 100/nrow(res$eig)
 colors <- as.double(t(lapply(as.double(res$eig[,2]), function(x) if(x >= kaisen_criterion) 1 else 0)))
 barplot(res$eig[1:nrow(res$eig),2], main="Eigen vectors - selected vectors are in black", names.arg = paste("dim", seq(1, nrow(res$eig))), col=colors)
@@ -90,7 +98,7 @@ barplot(res$eig[1:nrow(res$eig),2], main="Eigen vectors - selected vectors are i
 
 a_sample <- sample(nrow(NO_NA), 400)
 X <- NO_NA
-X <- NO_NA[a_sample,]
+# X <- NO_NA[a_sample,]
 Y <- NO_NA[a_sample,"lvef"]
 
 plot(X[, c("gender", "hypertension")])
@@ -98,8 +106,7 @@ plot(X[, c("gender", "hypertension")])
 hist(Y)
 
 library("dplyr")
-
-NO_NA <- NO_NA %>% filter( bmi < quantile(bmi, 0.99))
+NO_NA <- NO_NA %>% filter( "bmi" < quantile(bmi, 0.99))
 NO_NA <- NO_NA %>% filter( age < quantile(age, 0.99))
 NO_NA <- NO_NA %>% filter( egfr < quantile(egfr, 0.99))
 NO_NA <- NO_NA %>% filter( sbp < quantile(sbp, 0.99))
@@ -171,6 +178,7 @@ for(i in quali) {
     fit <- aov(X[,j] ~ X[,i], X[,c(i, j)])
     print(paste(i, "-", j))
     print(summary(fit))
+    plot(X[,c(i, j)])
   }
 }
 
@@ -220,7 +228,16 @@ plot.FAMD(res, choix = c("quali"), axes = c(1, 2))
 plot.FAMD(res, choix = c("ind"), lab.ind = FALSE, axes = c(1, 3))
 plot.FAMD(res, choix = c("quanti"), axes = c(2, 3))
 
-imputed_data <- missMDA::imputeFAMD(data_train[,c(quali, quanti)], ncp = 15)
+X <- data_train
+# Creation d'une nouvelle variable combinaison de centre et country
+X[, "centre_country"] <- with(X, interaction(centre, country), drop = TRUE )
+X[,"centre"] <- NULL
+X[,"country"] <- NULL
+
+# Imputation
+quanti <- c("bmi", "age", "sbp", "dbp", "hr" )
+quali <- c("centre_country", "gender", "copd", "previoushf", "afib", "cad" )
+imputed_data <- missMDA::imputeFAMD(X[,c(quali, quanti)], ncp = 15, method = "Regularized")
 
 # Retrait des variables non correlées
 index_des_variables_supplementaires <- findIndex(X, c("centre", "country", "lvef", "lvefbin", "egfr",  "afib",  "copd"))
@@ -237,19 +254,12 @@ for(i in c("bmi", "age", "sbp", "hr", "hypertension", "previoushf", "cad")) {
 }
 res <- DMFA(w)
 
-#
-# AFD
-#
-imputed_data <- missMDA::imputeFAMD(data_train, ncp = 20)
-d <- imputed_data$completeObs[,c("gender", "bmi", "age", "sbp", "hr", "hypertension", "previoushf", "cad", "lvefbin")]
-library(MASS)
-fit <- lda(lvefbin ~ ., data=d)
-values <- predict(fit)
-plot(values$x[,1],values$x[,2])
 
 #
 # Regression logistique
 #
+d <- imputed_data$completeObs
+d["lvefbin"] <- data_train[,"lvefbin"]
 reg <- glm(lvefbin ~ ., data=d, family = binomial(logit))
 pred <- predict(reg, type = "response", newdata = d)
 erreur_apprentissage <- taux_erreur(d$lvefbin, pred > 0.5)

@@ -104,15 +104,26 @@ NO_NA <- NO_NA %>% filter( hr > quantile(hr, 0.01))
 
 clean_data <- rbind(NO_NA, ALL_NA)
 
-imputed_data <- missMDA::imputeFAMD(clean_data[, all], ncp = 20)
+clean_data[, "centre_country"] <- with(clean_data, interaction(centre, country), drop = TRUE )
+clean_data[,"centre"] <- NULL
+clean_data[,"country"] <- NULL
+
+quanti <- c("bmi", "age", "egfr", "sbp", "dbp", "hr" )
+quali <- c("centre_country", "gender", "copd", "hypertension", "previoushf", "afib", "cad" )
+all <- c(quali, quanti)
+
+imputed_data <- missMDA::imputeFAMD(clean_data[, all], ncp = 15, method = "EM")
 X_imputed <- imputed_data$completeObs 
 
-X_imputed[, "lvefbin"] <- data_train[, "lvefbin"]
+X_imputed[, "lvefbin"] <- clean_data[, "lvefbin"]
 
 #########
 #########
 #########
-
+# SOM
+#########
+#########
+#########
 
 library(SOMbrero)
 X_all <- X_imputed
@@ -123,18 +134,19 @@ for(i in c("gender", "copd", "hypertension", "previoushf", "afib", "cad" )) {
 
 X_all[,quanti] <- scale(X_all[,quanti])
 
-selected <- X_all[,"centre"] == 7 || X_all[,"centre"] == 8 
-selected <- !selected
+# selected <- X_all[,"centre"] == 7 || X_all[,"centre"] == 8 
+# selected <- !selected
 
 
-X_all <- one_hot_encode(X_all, "centre")
-X_all <- one_hot_encode(X_all, "country")
+#X_all <- one_hot_encode(X_all, "centre")
+#X_all <- one_hot_encode(X_all, "country")
+X_all <- one_hot_encode(X_all, "centre_country")
 
 # c("gender", "bmi", "age", "sbp", "hr", "hypertension", "previoushf", "cad")
 # sup = "egfr", "sbp", "dbp", "hr" "centre", "country", "copd",  "afib"
 # X_all[,"lvefbin"] <- NULL
-X_all[,"centre"] <- NULL
-X_all[,"country"] <- NULL
+# X_all[,"centre"] <- NULL
+# X_all[,"country"] <- NULL
 # X_all[,"copd"] <- NULL
 # X_all[,"afib"] <- NULL
 # X_all[,"s_dbp"] <- X_all[,"sbp"] - X_all[,"dbp"]
@@ -147,8 +159,9 @@ lvefbin[lvefbin == 1] <- 'bad'
 lvefbin[lvefbin == 2] <- 'good'
 
 
-som <- SOMbrero::trainSOM(x.data = X_all[selected,], dimension = c(3, 3), verbose=TRUE, nb.save=50)
-plot(som, what="add", type="pie", variable=lvefbin)
+som <- SOMbrero::trainSOM(x.data = X_all, dimension = c(10, 10), verbose=TRUE, nb.save=50)
+
+plot(som, what="add", variable=lvefbin)
 
 # https://cran.r-project.org/web/packages/SOMbrero/vignettes/doc-numericSOM.html
 plot(som, what="energy")
@@ -160,10 +173,32 @@ plot(som, what="obs", type="names", print.title=TRUE, scale=c(0.9,0.5))
 plot(som, what="prototypes", type="umatrix")
 plot(som, type="radar", key.loc=c(-0.5,5), mar=c(0,10,2,0))
 
-
+X_all[,"cluster_som"] <- som$clustering
+X_all <- one_hot_encode(X_all, "cluster_som")
+X_all[,"lvefbin"] <- c(NO_NA[, "lvefbin"], ALL_NA[,"lvefbin"])
 write.table(X_all, "clean_data_train_after_som.csv", sep=";", quote=FALSE, row.names = FALSE)
 
-#######
+
+
+  #############################################################################################
+####### TEST
+#############################################################################################
+
+file <- "data_test.rda"
+load(file)
+
+test_data <- data_test
+
+test_data[, "centre_country"] <- with(test_data, interaction(centre, country), drop = TRUE )
+test_data[,"centre"] <- NULL
+test_data[,"country"] <- NULL
+
+quanti <- c("bmi", "age", "egfr", "sbp", "dbp", "hr" )
+quali <- c("centre_country", "gender", "copd", "hypertension", "previoushf", "afib", "cad" )
+all <- c(quali, quanti)
+
+imputed_data <- missMDA::imputeFAMD(test_data[, all], ncp = 15, method = "EM")
+X_all <- imputed_data$completeObs 
 
 X_all <- X_test
 for(i in c("gender", "copd", "hypertension", "previoushf", "afib", "cad" )) {
@@ -172,33 +207,24 @@ for(i in c("gender", "copd", "hypertension", "previoushf", "afib", "cad" )) {
 
 X_all[,quanti] <- scale(X_all[,quanti])
 
-selected <- X_all[,"centre"] == 7
 
 # c("gender", "bmi", "age", "sbp", "hr", "hypertension", "previoushf", "cad")
 # sup = "egfr", "sbp", "dbp", "hr" "centre", "country", "copd",  "afib"
-X_all[,"lvefbin"] <- NULL
-X_all[,"centre"] <- NULL
-X_all[,"country"] <- NULL
-X_all[,"copd"] <- NULL
-X_all[,"afib"] <- NULL
-X_all[,"s_dbp"] <- X_all[,"sbp"] - X_all[,"dbp"]
-X_all[,"dbp"] <- NULL
-X_all[,"sbp"] <- NULL
+# X_all[,"lvefbin"] <- NULL
+# X_all[,"centre"] <- NULL
+# X_all[,"country"] <- NULL
+# X_all[,"copd"] <- NULL
+# X_all[,"afib"] <- NULL
+# X_all[,"s_dbp"] <- X_all[,"sbp"] - X_all[,"dbp"]
+# X_all[,"dbp"] <- NULL
+# X_all[,"sbp"] <- NULL
+
+som <- SOMbrero::trainSOM(x.data = X_all, dimension = c(3, 2), verbose=TRUE, nb.save=50)
+X_all[,"cluster_som"] <- factor(som$clustering)
 
 write.table(X_all, "clean_data_test_after_som.csv", sep=";", quote=FALSE, row.names = FALSE)
 
 
-som <- SOMbrero::trainSOM(x.data = X_all, dimension = c(3, 2), verbose=TRUE, nb.save=50)
-plot(som, what="add", type="pie", variable=X[,"lvefbin"])
 
-# https://cran.r-project.org/web/packages/SOMbrero/vignettes/doc-numericSOM.html
-plot(som, what="energy")
-
-plot(som, what="obs", type="hitmap")
-plot(som, what="prototypes", type="color", var=1, main="prototypes - x1")
-plot(som, what="prototypes", type="lines", print.title=TRUE)
-plot(som, what="obs", type="names", print.title=TRUE, scale=c(0.9,0.5))
-plot(som, what="prototypes", type="umatrix")
-plot(som, type="radar", key.loc=c(-0.5,5), mar=c(0,10,2,0))
 
 
