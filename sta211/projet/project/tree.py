@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 import sys
 
@@ -16,16 +16,22 @@ categories = {"gender": 'category', "copd": 'category',
               "centre_country": 'category'}
 X = pd.read_csv(filename, header=0, sep=delimiter, error_bad_lines=False,
                 dtype=dict(categories, **{"lvefbin": 'category'}))
-y = X["lvefbin"]
+y = X["lvefbin"].values.ravel()
 X = X.drop("lvefbin", 1)
 
-for i in categories.keys():
-    X[i] = LabelEncoder().fit_transform(X[i])
+filename_test = 'clean_data_test.csv'
+data_test = pd.read_csv(filename_test, header=0, sep=delimiter, error_bad_lines=False,
+                        dtype=categories)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y.values.ravel(), test_size=0.20, random_state=42)
+for i in categories.keys():
+    label_encoder = LabelEncoder().fit(X[i])
+    X[i] = label_encoder.transform(X[i])
+    data_test[i] = label_encoder.transform(data_test[i])
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=42)
 
 # Basic extra tree
-clf = ExtraTreesClassifier(n_estimators=100, max_depth=5)
+clf = ExtraTreesClassifier(min_samples_split=16, n_estimators=150, max_depth=11, min_samples_leaf=4)
 clf.fit(X_train, y_train)
 print("ExtraTreesClassifier")
 print("Score apprentissage  = %f" % clf.score(X_train, y_train))
@@ -57,19 +63,13 @@ print(clf.best_score_)
 print("Variable importance")
 print(clf.best_estimator_.feature_importances_)
 
-filename_test = 'clean_data_test.csv'
-data_test  = pd.read_csv(filename_test, header=0, sep=delimiter, error_bad_lines=False,
-                dtype=categories)
-for i in categories.keys():
-    data_test[i] = LabelEncoder().fit_transform(data_test[i])
-
 if len(data_test) != 987:
     sys.exit("Missing values")
 
 pred_test = clf.best_estimator_.predict(data_test)
-print(pred_test)
 df = pd.DataFrame(pred_test)
 
 import datetime
+
 today = datetime.datetime.now()
-df.to_csv(today.strftime('%Y%m%d%H%M') + "-python_extratrees.csv", index=False, encoding='utf-8')
+df.to_csv(today.strftime('%Y%m%d%H%M') + "-python_extratrees.csv", index=False, encoding='utf-8', header=False)

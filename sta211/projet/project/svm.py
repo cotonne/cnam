@@ -1,70 +1,55 @@
 #!/usr/bin/python
 # -*- coding: utf-8 -*-
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib import cm as colormap
-from sklearn import preprocessing
 from sklearn import svm
 # higher is better
-from sklearn.metrics import make_scorer
 from sklearn.model_selection import GridSearchCV
+from sklearn.preprocessing import LabelEncoder
 
 
-def codageDisjonctifComplet(X, name):
+def codageDisjonctifComplet(X, X_test, name):
     from sklearn.preprocessing import LabelEncoder
     from sklearn.preprocessing import OneHotEncoder
-    values = X[name].values.reshape(-1, 1)
+    values = X[name].values
     le = LabelEncoder()
     oneHotEncodedValues = le.fit_transform(values).reshape(-1, 1)
     onehotencoder = OneHotEncoder()
     features = pd.DataFrame(onehotencoder.fit_transform(oneHotEncodedValues).toarray())
     features.columns = onehotencoder.get_feature_names()
     X = X.drop(columns=[name])
-    return X.join(features, lsuffix=name)
+    X_test = X_test.drop(columns=[name])
+    return X.join(features, lsuffix=name), X_test.join(features, lsuffix=name)
 
 
-filename = 'data_train_ncp_15.csv'
-filename_test = "data_test_ncp_15.csv"
-# filename = 'clean_data_train.csv'
-# filename_test = "clean_data_test.csv"
+filename = 'clean_data_train.csv'
+filename_test = 'clean_data_test.csv'
 delimiter = ';'
-
-# id;centre;country;gender;copd;hypertension;previoushf;afib;cad;bmi;age;egfr;sbp;dbp;hr;lvefbin
-
 data = []
 
+categories = {"gender": 'category', "copd": 'category',
+              "previoushf": 'category', "afib": 'category', "cad": 'category'}
 X = pd.read_csv(filename, header=0, sep=delimiter, error_bad_lines=False,
-                dtype={
-                    "centre": 'S4',
-                    "country": 'S4', "gender": 'S4', "bmi": 'float', "age": 'float', "egfr": 'float',
-                    "sbp": 'float', "dbp": 'float', "hr": 'float', "copd": 'S4',
-                    "hypertension": 'S4', "previoushf": 'S4', "afib": 'S4', "cad": 'S4'})
-X = codageDisjonctifComplet(X, "centre")
-X = codageDisjonctifComplet(X, "country")
-X_scaled = preprocessing.StandardScaler().fit_transform(X)
-X_train = X_scaled
+                dtype=dict(categories, **{"lvefbin": 'category', "centre_country": 'category'}))
+y = X["lvefbin"].values.ravel()
+X = X.drop("lvefbin", 1)
 
-y = pd.read_csv(filename, header=0, sep=delimiter, error_bad_lines=False,
-                usecols=["lvefbin"],
-                dtype={"lvefbin": 'S4'})
-y = y.values.ravel()
+X_test = pd.read_csv(filename_test, header=0, sep=delimiter, error_bad_lines=False,
+                     dtype=dict(categories, **{"centre_country": 'category'}))
+
+for i in categories.keys():
+    label_encoder = LabelEncoder().fit(X[i])
+    X[i] = label_encoder.transform(X[i])
+    X_test[i] = label_encoder.transform(X_test[i])
+
+X, X_test = codageDisjonctifComplet(X, X_test, "centre_country")
+
 labels, y = np.unique(y, return_inverse=True)
-Y_train = y
 
-X_test = pd.read_csv(filename_test, header=0, sep=";",
-                     usecols=["gender", "bmi", "age", "egfr", "sbp", "dbp", "hr", "centre", "country",
-                              "copd", "hypertension", "previoushf", "afib", "cad"],
-                     dtype={
-                         "centre": 'S4',
-                         "country": 'S4', "gender": 'S4', "bmi": 'float', "age": 'float', "egfr": 'float',
-                         "sbp": 'float', "dbp": 'float', "hr": 'float', "copd": 'S4',
-                         "hypertension": 'S4', "previoushf": 'S4', "afib": 'S4', "cad": 'S4'})
-
-X_test = codageDisjonctifComplet(X_test, "centre")
-X_test = codageDisjonctifComplet(X_test, "country")
-X_test_scaled = preprocessing.StandardScaler().fit_transform(X_test)
-X_test = X_test_scaled
+# X_scaled = preprocessing.StandardScaler().fit_transform(X)
+# X_train = X_scaled
+# X_test_scaled = preprocessing.StandardScaler().fit_transform(X_test)
+# X_test = X_test_scaled
 
 # X_train, X_test, Y_train, y_test = train_test_split(X_scaled, y, test_size=0.20, random_state=42)
 
@@ -84,30 +69,31 @@ clf = GridSearchCV(
     verbose=2
 )
 
-clf.fit(X_train, Y_train)
+clf.fit(X, y)
 print(clf.best_estimator_)
-print("No Score apprentissage = {}".format(clf.best_estimator_.score(X_train, Y_train)))
-# print("No Score test = {}".format(clf.best_estimator_.score(X_test, y_test)))
+print("No Score apprentissage = {}".format(clf.best_estimator_.score(X, y)))
 
 pred_test = clf.best_estimator_.predict(X_test)
 print(pred_test)
 df = pd.DataFrame(labels[pred_test])
 
 import datetime
-today = datetime.datetime.now()
-df.to_csv(today.strftime('%Y%m%d%H%M') + "-python_svm.csv", index=False, encoding='utf-8')
-cparams = np.array(range(-2, 2))
-kparams = np.array(['rbf', 'sigmoid'])
-gparams = np.array(range(-4, 4))
-xx, yy, zz = np.meshgrid(cparams, kparams, gparams)
 
-# affichage sous forme de wireframe des resultats des modeles evalues
-fig = plt.figure()
-ax = fig.gca(projection='3d')
-Z = clf.cv_results_['mean_test_score'].reshape((len(xx), len(yy), len(zz)))
-# ax = fig.add_subplot(111, projection='3d')
-ax.plot_surface(xx, yy, Z, cmap=colormap.coolwarm)
-ax.set_xlabel("Profondeur")
-ax.set_ylabel("Nombre d'estimateurs")
-ax.set_zlabel("Score moyen")
-plt.show()
+today = datetime.datetime.now()
+df.to_csv(today.strftime('%Y%m%d%H%M') + "-python_svm.csv", index=False, encoding='utf-8', header=False)
+
+# cparams = np.array(range(-2, 2))
+# kparams = np.array(['rbf', 'sigmoid'])
+# gparams = np.array(range(-4, 4))
+# xx, yy, zz = np.meshgrid(cparams, kparams, gparams)
+#
+# # affichage sous forme de wireframe des resultats des modeles evalues
+# fig = plt.figure()
+# ax = fig.gca(projection='3d')
+# Z = clf.cv_results_['mean_test_score'].reshape((len(xx), len(yy), len(zz)))
+# # ax = fig.add_subplot(111, projection='3d')
+# ax.plot_surface(xx, yy, Z, cmap=colormap.coolwarm)
+# ax.set_xlabel("Profondeur")
+# ax.set_ylabel("Nombre d'estimateurs")
+# ax.set_zlabel("Score moyen")
+# plt.show()

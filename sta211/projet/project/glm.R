@@ -43,6 +43,23 @@ library(ggplot2)
 file <- "data_train.rda"
 load(file)
 
+file_test <- "data_test.rda"
+load(file_test)
+X_test <- data_test
+
+#
+# Suppression des variables redondantes
+#
+X_test[,"egfr"] <- NULL
+X_test[,"hypertension"] <- NULL
+
+#
+# Création de la variable centre_country
+#
+X_test[, "centre_country"] <- with(X_test, interaction(centre, country), drop = TRUE )
+X_test[,"centre"] <- NULL
+X_test[,"country"] <- NULL
+
 library("dplyr")
 X <- data_train
 
@@ -85,21 +102,15 @@ X[,"country"] <- NULL
 # Normalisation variable quantitative
 #
 X[,c("bmi", "age", "sbp", "dbp", "hr")] <- scale(X[,c("bmi", "age", "sbp", "dbp", "hr")])
+X_test[,c("bmi", "age", "sbp", "dbp", "hr")] <- scale(X_test[,c("bmi", "age", "sbp", "dbp", "hr")])
 
 #
 # Imputation des données
 #
-imputed_data <- missMDA::imputeFAMD(X, ncp = 15, method = "EM")
-d <- imputed_data$completeObs
-
-#
-# OneHot
-#
-#tmp_d <- d
-#for(i in c("gender", "copd", "previoushf", "afib", "cad" )) {
-#  tmp_d <- label_encode(tmp_d, i)
-#}
-#tmp_d <- one_hot_encode(tmp_d, "centre_country")
+all <- rbind(X, X_test)
+imputed_data <- missMDA::imputeFAMD(all, ncp = 15, method = "EM")
+d <- imputed_data$completeObs[1:nrow(X),]
+imputed_data_test <- imputed_data$completeObs[(nrow(X)+1):(nrow(X) + nrow(X_test)),]
 
 #
 # SOM
@@ -121,29 +132,14 @@ erreur_apprentissage <- taux_erreur(d$lvefbin, pred > 0.5)
 #
 # PREDICTION
 #
-file_test <- "data_test.rda"
-load(file_test)
-X_test <- data_test
 
-#
-# Suppression des variables redondantes
-#
-X_test[,"egfr"] <- NULL
-X_test[,"hypertension"] <- NULL
-
-#
-# Création de la variable centre_country
-#
-X_test[, "centre_country"] <- with(X_test, interaction(centre, country), drop = TRUE )
-X_test[,"centre"] <- NULL
-X_test[,"country"] <- NULL
 
 #
 # Imputation des données
 #
-imputed_data_test <- missMDA::imputeFAMD(X_test, ncp = 15, method = "EM")
+# imputed_data_test <- missMDA::imputeFAMD(X_test, ncp = 15, method = "EM")
 
-write.table(imputed_data_test$completeObs, "clean_data_test.csv", sep=";", quote=FALSE, row.names = FALSE)
+write.table(imputed_data_test, "clean_data_test.csv", sep=";", quote=FALSE, row.names = FALSE)
 #
 # Prediction
 #
