@@ -117,7 +117,9 @@ step_min_arv_validation = steps(ii);
 step_min_arv_test = steps(ii);
 
 all_arv_values = [arv_err_apprentissage;arv_err_validation;arv_err_test];
-max_all_arv = max(all_values);
+max_all_arv = max(all_arv_values);
+
+disp([steps' arv_err_apprentissage arv_err_validation arv_err_test]);
 
 figure
 plot(steps,err_apprentissage,'b-', ...
@@ -131,7 +133,7 @@ figure
 plot(steps,arv_err_apprentissage,'b-', ...
   steps,arv_err_validation,'r-', ...
   steps, arv_err_test, 'g-', ...
-  [step_min_validation step_min_arv_validation], [0 max_all], 'r-', ...
-  [step_min_test step_min_test], [0 max_all], 'g-')
+  [step_min_validation step_min_arv_validation], [0 max_all_arv], 'r-', ...
+  [step_min_test step_min_test], [0 max_all_arv], 'g-')
 legend(': arv apprentissage',': arv validation', ': arv test');
 title('ERREUR ARV')

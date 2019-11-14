@@ -47,28 +47,17 @@ file_test <- "data_test.rda"
 load(file_test)
 X_test <- data_test
 
-#
-# Suppression des variables redondantes
-#
-X_test[,"egfr"] <- NULL
-X_test[,"hypertension"] <- NULL
-
-#
-# Création de la variable centre_country
-#
-X_test[, "centre_country"] <- with(X_test, interaction(centre, country), drop = TRUE )
-X_test[,"centre"] <- NULL
-X_test[,"country"] <- NULL
-
 library("dplyr")
 X <- data_train
 
 #
 # Suppression des variables redondantes
 #
-X[,"egfr"] <- NULL
-X[,"hypertension"] <- NULL
-X["lvef"] <- NULL
+# X[,"egfr"] <- NULL
+# X[,"hypertension"] <- NULL
+# X_test[,"egfr"] <- NULL
+# X_test[,"hypertension"] <- NULL
+
 #
 # Suppression premier et dernier centile
 #
@@ -88,8 +77,10 @@ NO_NA <- NO_NA %>% filter( hr > quantile(hr, 0.01))
 
 X <- rbind(NO_NA, ALL_NA)
 
-lvefbin <- X["lvefbin"]
+y <- "lvefbin"
+lvefbin <- X[y]
 X["lvefbin"] <- NULL
+X["lvef"] <- NULL
 
 #
 # Création de la variable centre_country
@@ -97,6 +88,10 @@ X["lvefbin"] <- NULL
 X[, "centre_country"] <- with(X, interaction(centre, country), drop = TRUE )
 X[,"centre"] <- NULL
 X[,"country"] <- NULL
+
+X_test[, "centre_country"] <- with(X_test, interaction(centre, country), drop = TRUE )
+X_test[,"centre"] <- NULL
+X_test[,"country"] <- NULL
 
 #
 # Normalisation variable quantitative
@@ -107,10 +102,9 @@ X_test[,c("bmi", "age", "sbp", "dbp", "hr")] <- scale(X_test[,c("bmi", "age", "s
 #
 # Imputation des données
 #
-all <- rbind(X, X_test)
-imputed_data <- missMDA::imputeFAMD(all, ncp = 15, method = "EM")
-d <- imputed_data$completeObs[1:nrow(X),]
-imputed_data_test <- imputed_data$completeObs[(nrow(X)+1):(nrow(X) + nrow(X_test)),]
+# all <- rbind(X, X_test)
+imputed_data <- missMDA::imputeFAMD(X, ncp = 25, method = "Regularized")
+d <- imputed_data$completeObs
 
 #
 # SOM
@@ -122,10 +116,11 @@ imputed_data_test <- imputed_data$completeObs[(nrow(X)+1):(nrow(X) + nrow(X_test
 #
 # Regression logistique
 #
-d[,"lvefbin"] <- lvefbin
+d[,y] <- lvefbin
 write.table(d, "clean_data_train.csv", sep=";", quote=FALSE, row.names = FALSE)
 
 reg <- glm(lvefbin ~ ., data=d, family = binomial(logit))
+# reg <- lm(lvef ~ ., data=d)
 pred <- predict(reg, type = "response", newdata = d)
 erreur_apprentissage <- taux_erreur(d$lvefbin, pred > 0.5)
 
@@ -137,9 +132,9 @@ erreur_apprentissage <- taux_erreur(d$lvefbin, pred > 0.5)
 #
 # Imputation des données
 #
-# imputed_data_test <- missMDA::imputeFAMD(X_test, ncp = 15, method = "EM")
+imputed_data_test <- missMDA::imputeFAMD(X_test, ncp = 25, method = "Regularized")
 
-write.table(imputed_data_test, "clean_data_test.csv", sep=";", quote=FALSE, row.names = FALSE)
+write.table(imputed_data_test$completeObs, "clean_data_test.csv", sep=";", quote=FALSE, row.names = FALSE)
 #
 # Prediction
 #

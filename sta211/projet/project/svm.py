@@ -7,20 +7,7 @@ from sklearn import svm
 from sklearn.model_selection import GridSearchCV
 from sklearn.preprocessing import LabelEncoder
 
-
-def codageDisjonctifComplet(X, X_test, name):
-    from sklearn.preprocessing import LabelEncoder
-    from sklearn.preprocessing import OneHotEncoder
-    values = X[name].values
-    le = LabelEncoder()
-    oneHotEncodedValues = le.fit_transform(values).reshape(-1, 1)
-    onehotencoder = OneHotEncoder()
-    features = pd.DataFrame(onehotencoder.fit_transform(oneHotEncodedValues).toarray())
-    features.columns = onehotencoder.get_feature_names()
-    X = X.drop(columns=[name])
-    X_test = X_test.drop(columns=[name])
-    return X.join(features, lsuffix=name), X_test.join(features, lsuffix=name)
-
+from util import codageDisjonctifComplet
 
 filename = 'clean_data_train.csv'
 filename_test = 'clean_data_test.csv'

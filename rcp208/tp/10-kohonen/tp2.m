@@ -1,6 +1,6 @@
 addpath somtoolbox-octave
 
- % CHARGER RCP208Data4Classes.ZIP
+ % CHARGER RCP208Data4Classes.ZIP/Data2.mat
 
 % CREATION DE LA STRUCTURE
 sData = som_data_struct(D,'name','Donnees2','labels',labs,'comp names',cnames);
