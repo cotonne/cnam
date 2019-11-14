@@ -6,7 +6,7 @@ pip3 install textblob_fr
 pip3 install neo4j-driver
 
 date
-echo "Waiting 3 min"
+echo "Waiting 1 min"
 sleep 60
 echo "starting tweet-reader.py"
 python --version

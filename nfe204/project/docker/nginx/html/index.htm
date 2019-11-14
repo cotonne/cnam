@@ -49,12 +49,18 @@
 <div>Cette page correspond au travail effectué dans le cadre de l'UE NFE204 avec le
     CNAM de Paris.
 </div>
+<h2>Twittos mentionné dans un tweet</h2>
+<div>
+    Nous émettons l’hypothèse que si un twitto était mentionné, cela signifie
+    qu’il intéresse une personne.
+</div>
+<div id="mention-to-tweets" class="mention-to-tweets"></div>
 <h2>Réponse aux tweets</h2>
 <div>
     Comment lire ce graph?<br/>
     <p>
-    Le graph suivant représente les 20 personnes avec le plus de réponses positives à
-    leurs tweets. Une analyse sémantique est effectuée sur les différents tweets.
+        Le graph suivant représente les 20 personnes avec le plus de réponses positives à
+        leurs tweets. Une analyse sémantique est effectuée sur les différents tweets.
     </p>
     <p>
         Les twittos sont représentés en orange, les messages en vert.
@@ -67,8 +73,31 @@
 </div>
 <div id="response-to-tweets" class="response-to-tweets">
 </div>
-
-
+<h2>Comment trouver les influenceurs sur Internet</h2>
+<div>
+    <p>
+        on peut considérer que l’influence se définit par la manière dont une personne
+        réagit à un stimulus produit par un influenceur. Ainsi, un twitto lambda ayant
+        des followers peut écrire un tweet, mais être ignoré de tous. Un tweet d’un
+        influenceur sera, par contre, activement commenté et partagé. Chaque twitto est
+        donc un nœud du graphe, relié entre eux par les messages et les interactions des
+        autres twittos avec ces messages.
+    </p>
+    <p>
+        On pourra ainsi mesurer le pouvoir d’un influenceur en combinant plusieurs critères :
+    <ul>
+        <li>Nombre de personnes touchées par un retweet</li>
+        <li>Réactions face à un tweet. Dans ce cas, on utilisera une analyse de sentiment qui
+            nous donnera une note pour évaluer la réaction positive ou négative.
+        </li>
+        <li>Mention dans un tweet. Plus un utilisateur a d’influence, plus il est probable qu’on
+            parle de lui en bien.
+        </li>
+    </ul>
+</p>
+<h2>Lien vers mon projet</h2>
+<a href="https://github.com/cotonne/cnam/blob/master/nfe204/project/2017_NFE204_PHELIZOT.odt?raw=true">Le lien vers mon projet pour NFE204 au CNAM</a>
+</div>
 </body>
 <script src="https://d3js.org/d3.v4.js"></script>
 <script>
@@ -83,154 +112,158 @@
         .attr("class", "tooltip")
         .style("opacity", 0);
 
-    var simulation;
-    var link;
-    var node;
-
-    function populateGraph(error, graph) {
-        if (error) return;
-
-
-        var width = window.innerWidth,
-            height = window.innerHeight,
-            sizeDivisor = 100,
-            nodePadding = 2.5;
-
-        var container = d3.select('#response-to-tweets');
-        var svg = container
-            .append("svg")
-            .attr("width", width)
-            .attr("height", height);
-        // force layout setup
-        var force = d3.forceSimulation()
-            .force("forceX", d3.forceX().strength(.1).x(width * .5))
-            .force("forceY", d3.forceY().strength(.1).y(height * .5))
-            .force("center", d3.forceCenter().x(width * .5).y(height * .5))
-            .force("charge", d3.forceManyBody().strength(-100));
-
+    function fromNeo4jToD3js(graph) {
         var nodes = [];
+        var knownIds = [];
 // Ensemble de [source: index de l'élement de le tableau nodes,target: ]
         var links = [];
         for (var i = 0; i < graph.data.length; i++) {
             var group = graph.data[i];
             for (var j = 0; j < group.length; j++) {
                 var e = group[j];
+		if(e.length > 0) {
+		    continue;
+		}
                 if (isUserOrTweet(e)) {
-                    nodes.push(toNode(e));
+                    if (knownIds.indexOf(e.metadata.id) === -1) {
+                        nodes.push(toNode(e));
+			knownIds.push(e.metadata.id);
+                    }
                 } else if (!isAutoReference(e)) {
                     links.push(toLink(e));
                 }
             }
 
         }
-
-        //.charge(-200).linkDistance(30).size([width, height]);
-
-
-        simulation = force
-            .nodes(nodes)
-            // Surcharge de la méthode id pour utiliser notre méthode
-            .force('link', d3.forceLink().id(function (d) {
-                return d.id;
-            }).distance(40).links(links))
-            .force("collide", d3.forceCollide().strength(.5).radius(function (d) {
-                return d.radius + nodePadding;
-            }).iterations(1))
-            .on("tick", function (d) {
-                node
-                    .attr("cx", function (d) {
-                        return d.x;
-                    })
-                    .attr("cy", function (d) {
-                        return d.y;
-                    })
-            });
-
-        var defs = svg.append("svg:defs");
-        defs.append("svg:marker")
-            .attr("id", "end")
-            .attr("refX", 15)
-            .attr("refY", 6)
-            .attr("markerWidth", 12)
-            .attr("markerHeight", 12)
-            .attr("orient", "auto")
-            .append("svg:path")
-            .attr("d", "M2,2 L2,11 L10,6 L2,2");
-
-// render relationships as lines
-        link = svg.selectAll(".link");
-        link = link.data(links).enter()
-            .append("line")
-            .attr("class", function (d) {
-                return "link " + d.type;
-            })
-            .attr("marker-end", "url(#end)");
-
-// render nodes as circles, css-class from label
-        node = svg.selectAll(".node")
-            .data(nodes).enter()
-            .append("circle")
-            //.merge()
-            .attr("fill", function (d) {
-                return color(d);
-            })
-            .attr("class", function (d) {
-                return "node " + d.label
-            })
-            .attr("r", 10)
-            .on("mouseover", function (d) {
-                div.transition()
-                    .duration(200)
-                    .style("opacity", .9);
-                div.html(formatTooltip(d))
-                    .style("left", (d3.event.pageX) + "px")
-                    .style("top", (d3.event.pageY - 28) + "px");
-            })
-            .on("mouseout", function (d) {
-                div.transition()
-                    .duration(500)
-                    .style("opacity", 0);
-            })
-            .call(d3.drag()
-                .on("start", dragstarted)
-                .on("drag", dragged)
-                .on("end", dragended));
-
-        node.append("text")
-            .attr("x", 12)
-            .attr("dy", ".35em")
-            .text(function (d) {
-                return isTweet(d) ? 'T' : 'U';
-            });
-
-// force feed algo ticks for coordinate computation
-        force.on('tick', ticked);
+	console.log(nodes);
+        return {nodes: nodes, links: links};
     }
 
-    function ticked() {
-        link.attr("x1", function (d) {
-            return d.source.x;
-        })
-            .attr("y1", function (d) {
-                return d.source.y;
-            })
-            .attr("x2", function (d) {
-                return d.target.x;
-            })
-            .attr("y2", function (d) {
-                return d.target.y;
-            });
+    function populateGraph(container, strength) {
+        return function (error, graph) {
+            if (error) return;
 
-        node.attr("cx", function (d) {
-            return d.x;
-        })
-            .attr("cy", function (d) {
-                return d.y;
-            });
+            var simulation;
+            var link;
+            var node;
+
+            const __ret = fromNeo4jToD3js(graph);
+            const nodes = __ret.nodes;
+            const links = __ret.links;
+
+            var width = window.innerWidth,
+                height = window.innerHeight,
+                nodePadding = 2.5;
+
+            var svg = container
+                .append("svg")
+                .attr("width", width)
+                .attr("height", height);
+
+            // force layout setup
+            var force = d3.forceSimulation()
+                .force("forceX", d3.forceX().strength(.1).x(width * .5))
+                .force("forceY", d3.forceY().strength(.1).y(height * .5))
+                .force("center", d3.forceCenter().x(width * .5).y(height * .5))
+                .force("charge", d3.forceManyBody().strength(strength));
+
+
+            simulation = force
+                .nodes(nodes)
+                // Surcharge de la méthode id pour utiliser notre méthode
+                .force('link', d3.forceLink().id(function (d) {
+                    return d.id;
+                }).distance(40).links(links))
+                .force("collide", d3.forceCollide().strength(.5).radius(function (d) {
+                    return d.radius + nodePadding;
+                }).iterations(1));
+
+            var defs = svg.append("svg:defs");
+            defs.append("svg:marker")
+                .attr("id", "end")
+                .attr("refX", 15)
+                .attr("refY", 6)
+                .attr("markerWidth", 12)
+                .attr("markerHeight", 12)
+                .attr("orient", "auto")
+                .append("svg:path")
+                .attr("d", "M2,2 L2,11 L10,6 L2,2");
+
+// render relationships as lines
+            link = svg.selectAll(".link");
+            link = link.data(links).enter()
+                .append("line")
+                .attr("class", function (d) {
+                    return "link " + d.type;
+                })
+                .attr("marker-end", "url(#end)");
+
+// render nodes as circles, css-class from label
+            node = svg.selectAll(".node")
+                .data(nodes).enter()
+                .append("circle")
+                .attr("fill", function (d) {
+                    return color(d);
+                })
+                .attr("class", function (d) {
+                    return "node " + d.label
+                })
+                .attr("r", 10)
+                .on("mouseover", function (d) {
+                    div.transition()
+                        .duration(200)
+                        .style("opacity", .9);
+                    div.html(formatTooltip(d))
+                        .style("left", (d3.event.pageX) + "px")
+                        .style("top", (d3.event.pageY - 28) + "px");
+                })
+                .on("mouseout", function (d) {
+                    div.transition()
+                        .duration(500)
+                        .style("opacity", 0);
+                })
+                .call(d3.drag()
+                    .on("start", dragstarted(simulation))
+                    .on("drag", dragged)
+                    .on("end", dragended(simulation)));
+
+            node.append("text")
+                .attr("x", 12)
+                .attr("dy", ".35em")
+                .text(function (d) {
+                    return isTweet(d) ? 'T' : 'U';
+                });
+
+            force.on('tick', ticked(link, node));
+        }
+    }
+
+    function ticked(link, node) {
+        return function () {
+            link.attr("x1", function (d) {
+                return d.source.x;
+            })
+                .attr("y1", function (d) {
+                    return d.source.y;
+                })
+                .attr("x2", function (d) {
+                    return d.target.x;
+                })
+                .attr("y2", function (d) {
+                    return d.target.y;
+                });
+
+            node.attr("cx", function (d) {
+                return d.x;
+            })
+                .attr("cy", function (d) {
+                    return d.y;
+                });
+        }
     }
 
     function isUserOrTweet(e) {
-        return e.metadata.labels;
+        return !!e.metadata && !!e.metadata.labels;
     }
 
     function toNode(e) {
@@ -289,10 +322,12 @@
         return url.substring(l + 1);
     }
 
-    function dragstarted(d) {
-        if (!d3.event.active) simulation.alphaTarget(.03).restart();
-        d.fx = d.x;
-        d.fy = d.y;
+    function dragstarted(simulation) {
+        return function (d) {
+            if (!d3.event.active) simulation.alphaTarget(.03).restart();
+            d.fx = d.x;
+            d.fy = d.y;
+        }
     }
 
     function dragged(d) {
@@ -300,10 +335,12 @@
         d.fy = d3.event.y;
     }
 
-    function dragended(d) {
-        if (!d3.event.active) simulation.alphaTarget(.03);
-        d.fx = null;
-        d.fy = null;
+    function dragended(simulation) {
+        return function (d) {
+            if (!d3.event.active) simulation.alphaTarget(.03);
+            d.fx = null;
+            d.fy = null;
+        }
     }
 
     function color(d) {
@@ -311,9 +348,19 @@
         return d.label === 'TWEET' ? "#66c2a5" : "#fc8d62";
     }
 
+    const container = d3.select('#response-to-tweets');
+    d3.json("/response-to-tweets", populateGraph(container, -150));
 
-    d3.json("/response-to-tweets", populateGraph);
+    d3.json("/mention-to-tweets", populateGraph(d3.select('#mention-to-tweets'), -50));
+</script>
+<!-- Global site tag (gtag.js) - Google Analytics -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=UA-88626974-2"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
 
+        gtag('config', 'UA-88626974-2');
 </script>
 
 </html>

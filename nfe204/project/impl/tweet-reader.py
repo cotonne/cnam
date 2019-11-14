@@ -60,7 +60,7 @@ for tweet in api.GetStreamFilter(locations=FRANCE):
         MERGE (u:USER {{ID:{user_id}}}) SET u.NAME='{user_name}', u.PSEUDO='{pseudo}', u.LOCATION='{location}'
         CREATE (u)-[:WRITE]->(t)
         """.format(tweet_id = tweet_id, text = escape(text), polarity = polarity, subjectivity = subjectivity,
-        user_id = user_id, user_name = escape(tweet['user']['name']), pseudo = escape(tweet['user']['name']), location = escape(tweet['user']['location']))
+        user_id = user_id, user_name = escape(tweet['user']['name']), pseudo = escape(tweet['user']['screen_name']), location = escape(tweet['user']['location']))
         
         if tweet['in_reply_to_status_id']:
             original_tweet = str(tweet['in_reply_to_status_id'])

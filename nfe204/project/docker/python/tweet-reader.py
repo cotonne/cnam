@@ -16,6 +16,7 @@ from neo4j.v1 import GraphDatabase
 from textblob import Blobber
 from textblob_fr import PatternTagger, PatternAnalyzer
 import os
+import datetime
 
 sys.stderr.write("Reading properties\n")
 
@@ -49,6 +50,7 @@ for tweet in api.GetStreamFilter(locations=FRANCE):
     #sys.stderr.write(tweet)
     try:
         sys.stderr.flush()
+
         lang = tweet['lang']
         if lang != 'fr':
             continue
@@ -57,6 +59,7 @@ for tweet in api.GetStreamFilter(locations=FRANCE):
         text = tweet['text']
         blob = tb(text)
         polarity, subjectivity = blob.sentiment
+        sys.stderr.write(datetime.datetime.now().strftime("%Y-%m-%d %H:%M") + "\n")
         sys.stderr.write("Inserting new messsage {} from {}\n".format(tweet_id, user_id))
         request = """
         CREATE (t:TWEET {{ ID:{tweet_id}, TEXT:'{text}', POLARITY:{polarity}, SUBJECTIVITY:{subjectivity} }})
@@ -77,7 +80,7 @@ for tweet in api.GetStreamFilter(locations=FRANCE):
         MERGE (x:USER {{ID:{reply_to}}})
         MERGE (x)-[:WRITE]->(o)
                 """.format(reply_to=original_user)
-                sys.stderr.write(user_id + " reply to " + str(original_user) + " about " + str(original_tweet))
+                sys.stderr.write(user_id + " reply to " + str(original_user) + " about " + str(original_tweet) + "\n")
                 
         
         if tweet['entities'] and tweet['entities']['user_mentions'] and len(tweet['entities']['user_mentions']) > 0:
@@ -92,7 +95,7 @@ for tweet in api.GetStreamFilter(locations=FRANCE):
         # sys.stderr.write(result)
         nbTweets += 1
         if nbTweets % 10 == 0:
-            sys.stderr.write("Number of tweets : " + str(nbTweets))    
+            sys.stderr.write("Number of tweets : " + str(nbTweets) + "\n")    
     except Exception as e:
         sys.stderr.write("Exception: {0}".format(e))
         sys.stderr.write(str(tweet))
